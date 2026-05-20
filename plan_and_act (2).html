@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Plan & Act" />
+<meta name="color-scheme" content="light dark" />
+<meta name="theme-color" content="#f4efe6" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#13110e" media="(prefers-color-scheme: dark)" />
+<title>Plan &amp; Act</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  /* ─── LIGHT THEME (default) ─── */
+  :root, :root[data-theme="light"] {
+    --paper: #f4efe6;
+    --paper-shade: #ebe4d6;
+    --ink: #1a1814;
+    --ink-soft: #3a3630;
+    --ink-faint: #5e584e;
+    --rule: #c4baa6;
+    --rule-strong: #9c937f;
+    --accent: #9d2b14;
+    --green: #3d5a2e;
+    --field-bg: #fbf8f1;
+    --pair-num-bg: var(--paper);
+    --noise-1: rgba(0,0,0,0.015);
+    --noise-2: rgba(0,0,0,0.02);
+    --shadow-color: rgba(0,0,0,0.2);
+  }
+
+  /* ─── DARK THEME ─── */
+  :root[data-theme="dark"] {
+    --paper: #13110e;
+    --paper-shade: #1c1916;
+    --ink: #f0ead9;
+    --ink-soft: #c4baa6;
+    --ink-faint: #8a8270;
+    --rule: #3a3630;
+    --rule-strong: #5e584e;
+    --accent: #e07259;
+    --green: #8fb073;
+    --field-bg: #1c1916;
+    --pair-num-bg: var(--paper);
+    --noise-1: rgba(255,255,255,0.02);
+    --noise-2: rgba(255,255,255,0.025);
+    --shadow-color: rgba(0,0,0,0.5);
+  }
+
+  /* Follow OS unless user sets a theme manually */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+      --paper: #13110e;
+      --paper-shade: #1c1916;
+      --ink: #f0ead9;
+      --ink-soft: #c4baa6;
+      --ink-faint: #8a8270;
+      --rule: #3a3630;
+      --rule-strong: #5e584e;
+      --accent: #e07259;
+      --green: #8fb073;
+      --field-bg: #1c1916;
+      --pair-num-bg: #13110e;
+      --noise-1: rgba(255,255,255,0.02);
+      --noise-2: rgba(255,255,255,0.025);
+      --shadow-color: rgba(0,0,0,0.5);
+    }
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 20% 30%, var(--noise-1) 1px, transparent 1px),
+      radial-gradient(circle at 70% 60%, var(--noise-2) 1px, transparent 1px);
+    background-size: 3px 3px, 5px 5px;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 24px 20px 120px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-bottom: 14px;
+    border-bottom: 1.5px solid var(--ink);
+    margin-bottom: 18px;
+    gap: 12px;
+  }
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+  .title {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--accent);
+  }
+  .date-stamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    font-weight: 500;
+    text-align: right;
+  }
+  .theme-toggle {
+    background: transparent;
+    border: 1.5px solid var(--rule-strong);
+    color: var(--ink-soft);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .tab {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s, border-color 0.15s;
+    font-weight: 500;
+  }
+  .tab.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin: 0 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule-strong);
+  }
+
+  .meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .meta-field label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .meta-field input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--rule-strong);
+    padding: 4px 0;
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--ink);
+    border-radius: 0;
+  }
+  .meta-field input:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+  .meta-field input::placeholder {
+    color: var(--ink-faint);
+  }
+
+  .pair {
+    margin-bottom: 16px;
+    background: var(--field-bg);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 16px 14px 8px;
+    position: relative;
+  }
+  .pair-num {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    background: var(--pair-num-bg);
+    padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .pair-remove {
+    position: absolute;
+    top: -8px;
+    right: 10px;
+    background: var(--pair-num-bg);
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-soft);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .pair-remove:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field:last-child {
+    margin-bottom: 4px;
+  }
+  .field-label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .field-label .key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .field-label .hint {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--rule-strong);
+    padding: 5px 0;
+    font-family: 'Fraunces', serif;
+    font-size: 15.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    resize: none;
+    border-radius: 0;
+    min-height: 1.5em;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  textarea:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+  textarea::placeholder {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
+  .add-pair {
+    width: 100%;
+    margin: 8px 0 20px;
+    background: transparent;
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: 3px;
+    padding: 14px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+  .add-pair:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--field-bg);
+  }
+  .add-pair .plus {
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+  }
+  .add-pair.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .realism {
+    margin: 24px 0 22px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .realism-q {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    line-height: 1.4;
+    flex: 1;
+    color: var(--ink);
+  }
+  .realism-q strong { font-weight: 700; }
+  .yn-toggle {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .yn-toggle button {
+    background: var(--paper);
+    border: none;
+    padding: 6px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .yn-toggle button + button {
+    border-left: 1.5px solid var(--ink);
+  }
+  .yn-toggle button.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .eod-intro {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+    line-height: 1.45;
+  }
+  .eod-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-style: italic;
+    font-size: 14px;
+    border: 1.5px dashed var(--rule-strong);
+    border-radius: 3px;
+    margin-bottom: 20px;
+  }
+  .eod-row {
+    background: var(--field-bg);
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .eod-row-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .eod-row-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .eod-row-text {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--ink);
+    flex: 1;
+    min-width: 0;
+  }
+  .eod-row-text .action {
+    color: var(--ink-soft);
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+    font-size: 13px;
+  }
+  .status-toggle {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .status-toggle button {
+    background: var(--paper);
+    border: none;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--ink-soft);
+    min-width: 38px;
+  }
+  .status-toggle button + button {
+    border-left: 1.5px solid var(--rule-strong);
+  }
+  .status-toggle button.done.active {
+    background: var(--green);
+    color: var(--paper);
+  }
+  .status-toggle button.miss.active {
+    background: var(--accent);
+    color: var(--paper);
+  }
+  .miss-reason {
+    display: none;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--rule-strong);
+  }
+  .miss-reason.show { display: block; }
+  .miss-reason input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px dashed var(--accent);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 4px 0;
+  }
+  .miss-reason input::placeholder {
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .miss-reason input:focus {
+    outline: none;
+    border-bottom-color: var(--ink);
+  }
+
+  .pot {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pot-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .pot input {
+    width: 90px;
+    background: var(--field-bg);
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 6px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--ink);
+  }
+  .pot input:focus {
+    outline: none;
+    border-color: var(--ink);
+  }
+  .pot input::placeholder {
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+  .pot-note {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--ink-soft);
+    flex: 1;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 28px;
+  }
+  .actions.three { grid-template-columns: 1fr 1fr 1fr; }
+  .btn {
+    padding: 14px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1.5px solid var(--ink);
+    transition: transform 0.05s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .btn-next-day {
+    width: 100%;
+    margin-top: 24px;
+    padding: 16px;
+    background: transparent;
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 3px;
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .btn-next-day::before {
+    content: "";
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--paper);
+    padding: 0 12px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+  .btn-next-day:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+    background: var(--field-bg);
+  }
+  .btn-next-day:active { transform: scale(0.99); }
+  .btn-next-day .next-day-arrow {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 400;
+  }
+
+  .footer-quote {
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule-strong);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    line-height: 1.55;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 11px 20px;
+    border-radius: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 100;
+    box-shadow: 0 4px 20px var(--shadow-color);
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ─── PDF MODAL ─── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    padding: 22px 20px;
+    max-width: 380px;
+    width: 100%;
+    box-shadow: 0 8px 40px var(--shadow-color);
+  }
+  .modal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .modal-sub {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+    line-height: 1.4;
+  }
+  .modal-input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 3px;
+    background: var(--field-bg);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .modal-input-wrap:focus-within { border-color: var(--accent); }
+  .modal-input-wrap input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px 12px;
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--ink);
+    min-width: 0;
+  }
+  .modal-input-wrap input:focus { outline: none; }
+  .modal-ext {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-faint);
+    padding: 0 12px 0 0;
+    font-weight: 500;
+  }
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* ─── PRINT (kept as fallback) ─── */
+  @media print {
+    @page { size: letter; margin: 0.6in; }
+    :root {
+      --paper: #ffffff !important;
+      --ink: #000000 !important;
+      --ink-soft: #333333 !important;
+      --ink-faint: #555555 !important;
+      --rule: #cccccc !important;
+      --rule-strong: #999999 !important;
+      --accent: #9d2b14 !important;
+      --green: #3d5a2e !important;
+      --field-bg: #fafafa !important;
+      --pair-num-bg: #ffffff !important;
+    }
+    body {
+      background: white !important;
+      background-image: none !important;
+      color: black !important;
+      font-size: 11pt;
+    }
+    .container { max-width: 100%; padding: 0; }
+    .tabs, .actions, .add-pair, .pair-remove, .theme-toggle,
+    .footer-quote { display: none !important; }
+    .pair { page-break-inside: avoid; }
+    .yn-toggle button.active,
+    .status-toggle button.done.active,
+    .status-toggle button.miss.active {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div class="header-left">
+      <div class="title">Plan <em>&amp;</em> Act</div>
+      <div class="date-stamp" id="dateStamp"></div>
+    </div>
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <span id="themeIcon">☾</span>
+    </button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-view="today">Morning</button>
+    <button class="tab" data-view="eod">End of Day</button>
+  </nav>
+
+  <section id="view-today" class="view active">
+
+    <div class="section-label">Morning send</div>
+
+    <div class="meta-row">
+      <div class="meta-field">
+        <label>Wake time</label>
+        <input type="text" id="wakeTime" placeholder="2:45 pm" autocomplete="off" />
+      </div>
+      <div class="meta-field">
+        <label>Send by (+1 hr)</label>
+        <input type="text" id="sendBy" placeholder="3:45 pm" autocomplete="off" />
+      </div>
+    </div>
+
+    <div id="pairsContainer"></div>
+
+    <button class="add-pair" id="addPairBtn">
+      <span class="plus">+</span>
+      <span>Add another pair</span>
+    </button>
+
+    <div class="realism">
+      <div class="realism-q">
+        <strong>Realism check.</strong> What I can actually finish today, plus 5&ndash;10%?
+      </div>
+      <div class="yn-toggle" id="realismToggle">
+        <button data-val="Y">Y</button>
+        <button data-val="N">N</button>
+      </div>
+    </div>
+
+    <div class="actions three">
+      <button class="btn btn-secondary" id="resetBtn">Reset</button>
+      <button class="btn btn-secondary" id="pdfBtn">Save PDF</button>
+      <button class="btn btn-primary" id="copyMorningBtn">Copy →</button>
+    </div>
+
+    <p class="footer-quote">
+      You can have the perfect plan for a dresser,<br>
+      but if no wood got cut today, that&rsquo;s the problem.
+    </p>
+  </section>
+
+  <section id="view-eod" class="view">
+    <div class="section-label">End of day</div>
+
+    <p class="eod-intro" id="eodIntro">
+      What did you get done?
+    </p>
+
+    <div id="eodContainer"></div>
+
+    <div class="pot">
+      <span class="pot-label">Pot owed</span>
+      <input type="text" id="potAmount" placeholder="$0" inputmode="numeric" />
+      <span class="pot-note">$30 default per unexcused miss</span>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" id="pdfEodBtn">Save PDF</button>
+      <button class="btn btn-primary" id="copyEodBtn">Copy →</button>
+    </div>
+
+    <button class="btn-next-day" id="nextDayBtn">
+      <span class="next-day-arrow">→</span>
+      <span>Next day</span>
+    </button>
+  </section>
+
+</div>
+
+<div class="modal-backdrop" id="pdfModal">
+  <div class="modal">
+    <h3 class="modal-title">Save as PDF</h3>
+    <p class="modal-sub">Name the file. It'll save to your Files or Downloads.</p>
+    <div class="modal-input-wrap">
+      <input type="text" id="pdfFilename" autocomplete="off" spellcheck="false" />
+      <span class="modal-ext">.pdf</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="pdfCancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="pdfSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copied</div>
+
+<script>
+  const STORAGE_KEY_TODAY = 'planact_today_v2';
+  const STORAGE_KEY_THEME = 'planact_theme_v1';
+  const MAX_PAIRS = 5;
+
+  // ─── THEME ─────────────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    if (theme === 'light' || theme === 'dark') {
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem(STORAGE_KEY_THEME, theme);
+    } else {
+      root.removeAttribute('data-theme');
+      localStorage.removeItem(STORAGE_KEY_THEME);
+    }
+    updateThemeIcon();
+  }
+
+  function effectiveTheme() {
+    const stored = localStorage.getItem(STORAGE_KEY_THEME);
+    if (stored === 'light' || stored === 'dark') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function updateThemeIcon() {
+    const icon = document.getElementById('themeIcon');
+    icon.textContent = effectiveTheme() === 'dark' ? '☀' : '☾';
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const next = effectiveTheme() === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+  });
+
+  // Init theme from storage
+  const storedTheme = localStorage.getItem(STORAGE_KEY_THEME);
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', storedTheme);
+  }
+
+  // React to system theme changes when no manual override
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!localStorage.getItem(STORAGE_KEY_THEME)) updateThemeIcon();
+  });
+
+  // ─── STATE ─────────────────────────────────────────────────────────────
+  const todayKey = () => new Date().toISOString().slice(0, 10);
+  const formatDate = (iso) => {
+    const d = new Date(iso + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+  const formatDateStamp = (iso) => {
+    const d = iso ? new Date(iso + 'T12:00:00') : new Date();
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
+    });
+  };
+
+  let state = loadToday();
+
+  function blankState() {
+    return {
+      date: todayKey(),
+      wakeTime: '',
+      sendBy: '',
+      pairs: [{ plan: '', action: '' }],
+      eod: [{ status: '', reason: '' }],
+      realism: '',
+      pot: ''
+    };
+  }
+
+  function loadToday() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_TODAY);
+      if (!raw) return blankState();
+      const parsed = JSON.parse(raw);
+      if (!parsed.pairs || parsed.pairs.length === 0) parsed.pairs = [{ plan: '', action: '' }];
+      if (!parsed.eod || parsed.eod.length !== parsed.pairs.length) {
+        parsed.eod = parsed.pairs.map((_, i) => parsed.eod && parsed.eod[i] ? parsed.eod[i] : { status: '', reason: '' });
+      }
+      return parsed;
+    } catch (e) {
+      return blankState();
+    }
+  }
+
+  function saveToday() {
+    localStorage.setItem(STORAGE_KEY_TODAY, JSON.stringify(state));
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function renderPairs() {
+    const container = document.getElementById('pairsContainer');
+    container.innerHTML = '';
+    // Safety net: always render at least one pair
+    if (!state.pairs || state.pairs.length === 0) {
+      state.pairs = [{ plan: '', action: '' }];
+      state.eod = [{ status: '', reason: '' }];
+      saveToday();
+    }
+    state.pairs.forEach((pair, idx) => {
+      const num = String(idx + 1).padStart(2, '0');
+      const showRemove = state.pairs.length > 1;
+      const el = document.createElement('div');
+      el.className = 'pair';
+      el.dataset.pair = idx;
+      el.innerHTML = `
+        <div class="pair-num">Pair ${num}</div>
+        ${showRemove ? `<button class="pair-remove" data-remove="${idx}" title="Remove pair">×</button>` : ''}
+        <div class="field">
+          <div class="field-label">
+            <span class="key">Plan</span>
+            <span class="hint">— the prep work</span>
+          </div>
+          <textarea data-field="plan" data-idx="${idx}" rows="1" placeholder="Figure out what to do...">${escapeHtml(pair.plan)}</textarea>
+        </div>
+        <div class="field">
+          <div class="field-label">
+            <span class="key">Action</span>
+            <span class="hint">— the walk-up, with a number</span>
+          </div>
+          <textarea data-field="action" data-idx="${idx}" rows="1" placeholder="Email 10 people, send 5 messages, film 1 video...">${escapeHtml(pair.action)}</textarea>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+
+    container.querySelectorAll('textarea').forEach(t => {
+      autosize(t);
+      t.addEventListener('input', () => {
+        const idx = parseInt(t.dataset.idx);
+        state.pairs[idx][t.dataset.field] = t.value;
+        autosize(t);
+        saveToday();
+      });
+    });
+
+    container.querySelectorAll('[data-remove]').forEach(b => {
+      b.addEventListener('click', () => {
+        const idx = parseInt(b.dataset.remove);
+        state.pairs.splice(idx, 1);
+        state.eod.splice(idx, 1);
+        saveToday();
+        renderPairs();
+        renderEod();
+        updatePotSuggestion();
+      });
+    });
+
+    document.getElementById('addPairBtn').classList.toggle('disabled', state.pairs.length >= MAX_PAIRS);
+  }
+
+  function renderEod() {
+    const container = document.getElementById('eodContainer');
+    container.innerHTML = '';
+
+    // Only render rows for pairs that have content
+    const validIndices = state.pairs
+      .map((p, i) => ({ p, i }))
+      .filter(x => x.p.plan.trim() || x.p.action.trim())
+      .map(x => x.i);
+
+    if (validIndices.length === 0) {
+      container.innerHTML = '<div class="eod-empty">Nothing planned this morning yet.<br>Head to Morning, fill out your pairs first.</div>';
+      return;
+    }
+
+    validIndices.forEach((idx) => {
+      const pair = state.pairs[idx];
+      const eod = state.eod[idx];
+      const el = document.createElement('div');
+      el.className = 'eod-row';
+      el.dataset.eod = idx;
+
+      // Build the preview text: prefer action if present, else plan
+      const previewMain = pair.action.trim() || pair.plan.trim();
+      const previewSub = pair.action.trim() && pair.plan.trim() ? pair.plan.trim() : '';
+
+      el.innerHTML = `
+        <div class="eod-row-head">
+          <div>
+            <div class="eod-row-label">Pair ${String(idx + 1).padStart(2, '0')}</div>
+            <div class="eod-row-text">
+              ${escapeHtml(previewMain)}
+              ${previewSub ? `<span class="action">${escapeHtml(previewSub)}</span>` : ''}
+            </div>
+          </div>
+          <div class="status-toggle">
+            <button class="done ${eod.status === 'done' ? 'active' : ''}" data-status="done" data-idx="${idx}">✓</button>
+            <button class="miss ${eod.status === 'miss' ? 'active' : ''}" data-status="miss" data-idx="${idx}">✕</button>
+          </div>
+        </div>
+        <div class="miss-reason ${eod.status === 'miss' ? 'show' : ''}">
+          <input type="text" data-reason="${idx}" placeholder="Why did you miss? (Kai evaluates)" value="${escapeHtml(eod.reason || '')}" />
+        </div>
+      `;
+      container.appendChild(el);
+    });
+
+    container.querySelectorAll('.status-toggle button').forEach(b => {
+      b.addEventListener('click', () => {
+        const idx = parseInt(b.dataset.idx);
+        const status = b.dataset.status;
+        state.eod[idx].status = state.eod[idx].status === status ? '' : status;
+        saveToday();
+        renderEod();
+        updatePotSuggestion();
+      });
+    });
+
+    container.querySelectorAll('[data-reason]').forEach(input => {
+      input.addEventListener('input', e => {
+        const idx = parseInt(input.dataset.reason);
+        state.eod[idx].reason = e.target.value;
+        saveToday();
+      });
+    });
+  }
+
+  function renderMeta() {
+    document.getElementById('dateStamp').textContent = formatDateStamp(state.date);
+    document.getElementById('wakeTime').value = state.wakeTime;
+    document.getElementById('sendBy').value = state.sendBy;
+    document.querySelectorAll('#realismToggle button').forEach(b => {
+      b.classList.toggle('active', b.dataset.val === state.realism);
+    });
+    document.getElementById('potAmount').value = state.pot;
+  }
+
+  function renderToday() {
+    renderMeta();
+    renderPairs();
+    renderEod();
+    updatePotSuggestion();
+  }
+
+  function autosize(t) {
+    t.style.height = 'auto';
+    t.style.height = (t.scrollHeight + 2) + 'px';
+  }
+
+  function updatePotSuggestion() {
+    if (state.pot) return;
+    const unexcused = state.eod.filter((e, i) => {
+      if (e.status !== 'miss') return false;
+      const pair = state.pairs[i];
+      return pair && (pair.plan.trim() || pair.action.trim());
+    }).length;
+    const input = document.getElementById('potAmount');
+    if (unexcused > 0) {
+      input.placeholder = '$' + (unexcused * 30) + ' suggested';
+    } else {
+      input.placeholder = '$0';
+    }
+  }
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.view;
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + target).classList.add('active');
+      if (target === 'eod') { renderEod(); updatePotSuggestion(); }
+      window.scrollTo(0, 0);
+    });
+  });
+
+  document.getElementById('wakeTime').addEventListener('input', e => {
+    state.wakeTime = e.target.value;
+    autoSendBy();
+    saveToday();
+  });
+  document.getElementById('sendBy').addEventListener('input', e => {
+    state.sendBy = e.target.value;
+    saveToday();
+  });
+
+  function autoSendBy() {
+    const v = state.wakeTime.trim();
+    if (!v || state.sendBy) return;
+    const m = v.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm|a|p)?$/i);
+    if (!m) return;
+    let h = parseInt(m[1]);
+    const min = m[2] ? parseInt(m[2]) : 0;
+    const ampm = (m[3] || '').toLowerCase();
+    if (ampm.startsWith('p') && h < 12) h += 12;
+    if (ampm.startsWith('a') && h === 12) h = 0;
+    let newH = (h + 1) % 24;
+    const newAmpm = newH >= 12 ? 'pm' : 'am';
+    const displayH = newH % 12 === 0 ? 12 : newH % 12;
+    const display = `${displayH}:${String(min).padStart(2, '0')} ${newAmpm}`;
+    state.sendBy = display;
+    document.getElementById('sendBy').value = display;
+    saveToday();
+  }
+
+  document.querySelectorAll('#realismToggle button').forEach(b => {
+    b.addEventListener('click', () => {
+      state.realism = state.realism === b.dataset.val ? '' : b.dataset.val;
+      saveToday();
+      renderMeta();
+    });
+  });
+
+  document.getElementById('potAmount').addEventListener('input', e => {
+    state.pot = e.target.value.replace(/[^0-9]/g, '');
+    saveToday();
+  });
+
+  document.getElementById('addPairBtn').addEventListener('click', () => {
+    if (state.pairs.length >= MAX_PAIRS) return;
+    state.pairs.push({ plan: '', action: '' });
+    state.eod.push({ status: '', reason: '' });
+    saveToday();
+    renderPairs();
+    renderEod();
+    setTimeout(() => {
+      const fields = document.querySelectorAll('#pairsContainer textarea[data-field="plan"]');
+      const last = fields[fields.length - 1];
+      if (last) last.focus();
+    }, 50);
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('Clear today\u2019s entries?')) return;
+    state = blankState();
+    saveToday();
+    renderToday();
+  });
+
+  // ─── SAVE PDF ─────────────────────────────────────────────────────────
+  function defaultPdfName() {
+    return `Plan-and-Act-${state.date}`;
+  }
+
+  function openPdfModal() {
+    if (!window.jspdf) {
+      showToast('PDF library still loading...');
+      return;
+    }
+    const modal = document.getElementById('pdfModal');
+    const input = document.getElementById('pdfFilename');
+    input.value = defaultPdfName();
+    modal.classList.add('show');
+    setTimeout(() => { input.focus(); input.select(); }, 100);
+  }
+
+  function closePdfModal() {
+    document.getElementById('pdfModal').classList.remove('show');
+  }
+
+  document.getElementById('pdfBtn').addEventListener('click', openPdfModal);
+  document.getElementById('pdfEodBtn').addEventListener('click', openPdfModal);
+  document.getElementById('pdfCancelBtn').addEventListener('click', closePdfModal);
+  document.getElementById('pdfModal').addEventListener('click', (e) => {
+    if (e.target.id === 'pdfModal') closePdfModal();
+  });
+  document.getElementById('pdfFilename').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('pdfSaveBtn').click();
+    }
+  });
+  document.getElementById('pdfSaveBtn').addEventListener('click', () => {
+    const rawName = document.getElementById('pdfFilename').value.trim() || defaultPdfName();
+    const safeName = rawName.replace(/[\\/:*?"<>|]/g, '').replace(/\.pdf$/i, '') || defaultPdfName();
+    generatePdf(safeName);
+    closePdfModal();
+  });
+
+  function generatePdf(filename) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 50;
+    const contentW = pageW - margin * 2;
+    let y = margin;
+
+    const ink = [26, 24, 20];
+    const inkSoft = [58, 54, 48];
+    const inkFaint = [120, 110, 95];
+    const accent = [157, 43, 20];
+    const green = [61, 90, 46];
+    const ruleColor = [156, 147, 127];
+
+    const addPageIfNeeded = (needed) => {
+      if (y + needed > pageH - margin) { doc.addPage(); y = margin; }
+    };
+
+    // Header
+    doc.setFont('times', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...ink);
+    doc.text('Plan', margin, y + 18);
+    const planW = doc.getTextWidth('Plan');
+    doc.setFont('times', 'italic');
+    doc.setTextColor(...accent);
+    doc.text(' & ', margin + planW, y + 18);
+    const ampW = doc.getTextWidth(' & ');
+    doc.setFont('times', 'bold');
+    doc.setTextColor(...ink);
+    doc.text('Act', margin + planW + ampW, y + 18);
+
+    doc.setFont('courier', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...inkSoft);
+    const dateStr = formatDateStamp(state.date).toUpperCase();
+    doc.text(dateStr, pageW - margin - doc.getTextWidth(dateStr), y + 18);
+
+    y += 28;
+    doc.setDrawColor(...ink);
+    doc.setLineWidth(1.2);
+    doc.line(margin, y, pageW - margin, y);
+    y += 18;
+
+    const sectionLabel = (text) => {
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...inkSoft);
+      doc.text(text.toUpperCase(), margin, y);
+      doc.setDrawColor(...ruleColor);
+      doc.setLineWidth(0.5);
+      doc.line(margin + doc.getTextWidth(text.toUpperCase()) + 8, y - 3, pageW - margin, y - 3);
+      y += 14;
+    };
+
+    sectionLabel('Morning send');
+
+    // Wake / Send by
+    doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(...inkSoft);
+    doc.text('WAKE TIME', margin, y);
+    doc.text('SEND BY (+1 HR)', margin + contentW / 2, y);
+    y += 12;
+    doc.setFont('times', 'normal'); doc.setFontSize(13); doc.setTextColor(...ink);
+    doc.text(state.wakeTime || '—', margin, y);
+    doc.text(state.sendBy || '—', margin + contentW / 2, y);
+    y += 4;
+    doc.setDrawColor(...ruleColor); doc.setLineWidth(0.5);
+    doc.line(margin, y, margin + contentW / 2 - 14, y);
+    doc.line(margin + contentW / 2, y, pageW - margin, y);
+    y += 20;
+
+    // Pairs
+    const wrap = (text, w, fs) => { doc.setFontSize(fs); return doc.splitTextToSize(text || '', w); };
+    state.pairs.forEach((pair, idx) => {
+      const planLines = wrap(pair.plan || '(blank)', contentW - 24, 12);
+      const actLines = wrap(pair.action || '(blank)', contentW - 24, 12);
+      const h = 36 + planLines.length * 16 + 16 + actLines.length * 16 + 16;
+      addPageIfNeeded(h);
+      const top = y;
+      doc.setDrawColor(...ruleColor); doc.setLineWidth(0.7);
+      doc.roundedRect(margin, top, contentW, h, 3, 3);
+
+      doc.setFillColor(255, 255, 255);
+      const badge = `PAIR ${String(idx + 1).padStart(2, '0')}`;
+      doc.setFont('courier', 'bold'); doc.setFontSize(8);
+      const bw = doc.getTextWidth(badge);
+      doc.rect(margin + 10, top - 5, bw + 12, 11, 'F');
+      doc.setTextColor(...accent);
+      doc.text(badge, margin + 16, top + 3);
+
+      y = top + 18;
+      doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...ink);
+      doc.text('PLAN', margin + 12, y);
+      doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(...inkSoft);
+      doc.text(' — the prep work', margin + 12 + doc.getTextWidth('PLAN'), y);
+      y += 14;
+      doc.setFont('times', 'normal'); doc.setFontSize(12); doc.setTextColor(...ink);
+      planLines.forEach(line => { doc.text(line, margin + 12, y); y += 16; });
+      y += 2;
+      doc.setDrawColor(...ruleColor); doc.setLineWidth(0.5);
+      doc.line(margin + 12, y, margin + contentW - 12, y);
+      y += 14;
+
+      doc.setFont('courier', 'bold'); doc.setFontSize(9); doc.setTextColor(...ink);
+      doc.text('ACTION', margin + 12, y);
+      doc.setFont('times', 'italic'); doc.setFontSize(10); doc.setTextColor(...inkSoft);
+      doc.text(' — the walk-up, with a number', margin + 12 + doc.getTextWidth('ACTION'), y);
+      y += 14;
+      doc.setFont('times', 'normal'); doc.setFontSize(12); doc.setTextColor(...ink);
+      actLines.forEach(line => { doc.text(line, margin + 12, y); y += 16; });
+      y += 2;
+      doc.line(margin + 12, y, margin + contentW - 12, y);
+      y = top + h + 12;
+    });
+
+    // Realism
+    addPageIfNeeded(46);
+    doc.setDrawColor(...ink); doc.setLineWidth(1);
+    doc.roundedRect(margin, y, contentW, 36, 3, 3);
+    doc.setFont('times', 'bold'); doc.setFontSize(11); doc.setTextColor(...ink);
+    doc.text('Realism check.', margin + 12, y + 16);
+    const rw = doc.getTextWidth('Realism check.');
+    doc.setFont('times', 'normal');
+    doc.text(' What I can actually finish, plus 5–10%?', margin + 12 + rw, y + 16);
+    const ynX = margin + contentW - 72; const ynY = y + 8;
+    ['Y', 'N'].forEach((v, i) => {
+      const active = state.realism === v;
+      if (active) { doc.setFillColor(...ink); doc.rect(ynX + i * 30, ynY, 30, 20, 'F'); doc.setTextColor(255,255,255); }
+      else { doc.setDrawColor(...ink); doc.setLineWidth(1); doc.rect(ynX + i * 30, ynY, 30, 20); doc.setTextColor(...ink); }
+      doc.setFont('courier', 'bold'); doc.setFontSize(10);
+      const vw = doc.getTextWidth(v);
+      doc.text(v, ynX + i * 30 + 15 - vw / 2, ynY + 14);
+    });
+    y += 50;
+
+    // EOD if any
+    const hasEod = state.eod.some(e => e.status) || state.pot;
+    if (hasEod) {
+      addPageIfNeeded(40 + state.eod.length * 22);
+      doc.setDrawColor(...ink); doc.setLineWidth(1.2);
+      doc.line(margin, y, pageW - margin, y);
+      y += 16;
+      sectionLabel('End of day');
+      state.eod.forEach((eod, i) => {
+        const pair = state.pairs[i];
+        if (!pair || (!pair.plan.trim() && !pair.action.trim())) return;
+        doc.setFont('courier', 'bold'); doc.setFontSize(10); doc.setTextColor(...ink);
+        doc.text(`Pair ${i + 1}`, margin, y + 12);
+        const sx = margin + 60;
+        if (eod.status === 'done') {
+          doc.setFillColor(...green); doc.rect(sx, y, 60, 18, 'F');
+          doc.setTextColor(255,255,255); doc.setFont('courier','bold'); doc.setFontSize(9);
+          doc.text('✓ DONE', sx + 10, y + 12);
+        } else if (eod.status === 'miss') {
+          doc.setFillColor(...accent); doc.rect(sx, y, 60, 18, 'F');
+          doc.setTextColor(255,255,255); doc.setFont('courier','bold'); doc.setFontSize(9);
+          doc.text('✕ MISS', sx + 10, y + 12);
+        } else {
+          doc.setDrawColor(...ruleColor); doc.rect(sx, y, 60, 18);
+          doc.setTextColor(...inkFaint); doc.setFont('courier','bold'); doc.setFontSize(9);
+          doc.text('— —', sx + 18, y + 12);
+        }
+        if (eod.status === 'miss' && eod.reason) {
+          doc.setFont('times','italic'); doc.setFontSize(10); doc.setTextColor(...inkSoft);
+          const rl = wrap(eod.reason, contentW - 140, 10);
+          doc.text(rl[0], sx + 70, y + 12);
+        }
+        y += 24;
+      });
+      y += 6;
+      doc.setFont('courier','bold'); doc.setFontSize(10); doc.setTextColor(...ink);
+      doc.text('Pot owed:', margin, y + 12);
+      doc.setFontSize(12);
+      doc.text(`$${state.pot || '0'}`, margin + 72, y + 12);
+      y += 24;
+    }
+
+    // Footer quote
+    y = Math.max(y, pageH - margin - 36);
+    doc.setDrawColor(...ruleColor); doc.setLineWidth(0.5);
+    doc.line(margin, y, pageW - margin, y);
+    y += 16;
+    doc.setFont('times','italic'); doc.setFontSize(10); doc.setTextColor(...inkSoft);
+    const q1 = 'You can have the perfect plan for a dresser,';
+    const q2 = 'but if no wood got cut today, that\u2019s the problem.';
+    doc.text(q1, pageW / 2 - doc.getTextWidth(q1) / 2, y);
+    y += 13;
+    doc.text(q2, pageW / 2 - doc.getTextWidth(q2) / 2, y);
+
+    doc.save(`${filename}.pdf`);
+    showToast('PDF saved');
+  }
+
+
+  function buildMorningTextFor(s) {
+    const lines = [];
+    lines.push(`☀️ ${formatDate(s.date)} — wake ${s.wakeTime || '—'}`);
+    lines.push('');
+    s.pairs.forEach((p, i) => {
+      if (!p.plan.trim() && !p.action.trim()) return;
+      lines.push(`P${i+1} plan: ${p.plan}`);
+      lines.push(`P${i+1} act:  ${p.action}`);
+      lines.push('');
+    });
+    lines.push(`Realism +5–10%? ${s.realism || '—'}`);
+    return lines.join('\n').trim();
+  }
+
+  function buildEodTextFor(s) {
+    const lines = [];
+    lines.push(`🌙 ${formatDate(s.date)} EOD`);
+    s.eod.forEach((e, i) => {
+      const pair = s.pairs[i];
+      if (!pair || (!pair.plan.trim() && !pair.action.trim())) return;
+      const mark = e.status === 'done' ? '✅' : e.status === 'miss' ? '❌' : '—';
+      const reason = e.status === 'miss' && e.reason ? ` — ${e.reason}` : '';
+      lines.push(`P${i+1}: ${mark}${reason}`);
+    });
+    lines.push(`Pot: $${s.pot || '0'}`);
+    return lines.join('\n').trim();
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Copied');
+    } catch (e) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Copied'); }
+      catch (e2) { showToast('Copy failed'); }
+      document.body.removeChild(ta);
+    }
+  }
+
+  document.getElementById('copyMorningBtn').addEventListener('click', () => copyText(buildMorningTextFor(state)));
+  document.getElementById('copyEodBtn').addEventListener('click', () => copyText(buildEodTextFor(state)));
+
+  document.getElementById('nextDayBtn').addEventListener('click', () => {
+    // Check if EOD has been filled out
+    const validPairs = state.pairs.filter(p => p.plan.trim() || p.action.trim());
+    const eodForValid = state.eod.slice(0, state.pairs.length)
+      .filter((e, i) => state.pairs[i] && (state.pairs[i].plan.trim() || state.pairs[i].action.trim()));
+    const unmarked = eodForValid.filter(e => !e.status).length;
+
+    let confirmMsg;
+    if (validPairs.length === 0) {
+      confirmMsg = 'Start a new day with a blank slate?';
+    } else if (unmarked > 0) {
+      confirmMsg = `You still have ${unmarked} pair${unmarked > 1 ? 's' : ''} not marked done or missed. Move to next day anyway?`;
+    } else {
+      confirmMsg = 'Move to next day? This clears today\u2019s plan and starts fresh.';
+    }
+
+    if (!confirm(confirmMsg)) return;
+
+    // Reset to blank state
+    state = blankState();
+    saveToday();
+    renderToday();
+
+    // Switch back to Morning tab
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('.tab[data-view="today"]').classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-today').classList.add('active');
+    window.scrollTo(0, 0);
+
+    showToast('New day');
+  });
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+  }
+
+  renderToday();
+  updateThemeIcon();
+</script>
+</body>
+</html>
